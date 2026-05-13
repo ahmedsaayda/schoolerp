@@ -47,10 +47,10 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "authentification.User"
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -130,8 +130,8 @@ REST_FRAMEWORK = {
     ],
 }
 
-# --- CORS / CSRF / cookies : frontend Vercel ↔ API Render (tests — CORS ouvert) ---
-CORS_ALLOW_ALL_ORIGINS = True
+# --- CORS / CSRF / cookies : frontend Vercel ↔ API Render ---
+CORS_ALLOW_ALL_ORIGINS = True  # Pour le test, on ouvre tout
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "https://schoolerp-ten.vercel.app",

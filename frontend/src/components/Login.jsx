@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext.jsx";
 import { defaultHomePath, readStoredUserRaw, userPayloadFromApi } from "../authRoles.js";
 import { SCHOOL_NAME, SCHOOL_TAGLINE, logoSchoolPublicUrl } from "../branding.js";
-import { API_AUTH_LOGIN, STORAGE_AUTH_KEY, apiFetch } from "../config.js";
+import { API_AUTH_CSRF, API_AUTH_LOGIN, STORAGE_AUTH_KEY, apiFetch } from "../config.js";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,6 +20,11 @@ export default function Login() {
       }
     }
   }, [user, navigate]);
+
+  /** Cookie csrftoken côté API (nécessaire login POST cross-origin Vercel → Render). */
+  useEffect(() => {
+    void apiFetch(API_AUTH_CSRF, { method: "GET", credentials: "include" });
+  }, []);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

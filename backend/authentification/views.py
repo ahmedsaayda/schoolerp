@@ -66,6 +66,13 @@ def _password_ops_gate(user) -> bool:
 
 
 @ensure_csrf_cookie
+@require_GET
+def csrf_cookie_api(request):
+    """Réponse vide : sert uniquement à poser le cookie csrftoken (SPA cross-domain)."""
+    return JsonResponse({"detail": "ok"})
+
+
+@ensure_csrf_cookie
 @require_POST
 def login_api(request):
     try:

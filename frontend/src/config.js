@@ -3,6 +3,7 @@ const rawApiBase =
   import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 export const API_BASE = String(rawApiBase).replace(/\/+$/, "");
 
+export const API_AUTH_CSRF = `${API_BASE}/api/auth/csrf/`;
 export const API_AUTH_LOGIN = `${API_BASE}/api/auth/login/`;
 export const API_AUTH_LOGOUT = `${API_BASE}/api/auth/logout/`;
 export const API_AUTH_ME = `${API_BASE}/api/auth/me/`;
