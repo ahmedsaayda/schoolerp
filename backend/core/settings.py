@@ -130,19 +130,17 @@ REST_FRAMEWORK = {
     ],
 }
 
-# --- CORS / CSRF / cookies : frontend Vite → API Django ---
-# Test déploiement : tout autoriser (avec credentials, la réponse reflète l’Origin demandée).
-CORS_ALLOW_ALL_ORIGINS = True
+# --- CORS / CSRF / cookies : frontend Vercel ↔ API Render ---
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
+    "https://schoolerp-ten.vercel.app",
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://samah-backend.onrender.com",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "https://schoolerp-ten.vercel.app",
 ]
 _extra_csrf = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
 if _extra_csrf:
