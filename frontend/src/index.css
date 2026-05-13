@@ -1,0 +1,429 @@
+/* Tailwind CSS v4 — import unique + config JS (content + thème) */
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  html {
+    font-family:
+      "Inter",
+      ui-sans-serif,
+      system-ui,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Soft defaults for form controls — existing utility classes still override as needed */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  button {
+    border-radius: 0.5rem;
+  }
+}
+
+/* react-date-range — presets sidebar + labels (DateRangeFilter, DateRangePickerCustom) */
+.date-range-popover .rdrDefinedRangesWrapper,
+.rdr-tailwind-scope .rdrDefinedRangesWrapper {
+  min-width: max(13.5rem, max-content);
+  width: max-content;
+  max-width: min(18rem, 100%);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border-right: 1px solid rgb(226 232 240 / 0.85);
+}
+
+.rdr-tailwind-scope .rdrStaticRangeLabel,
+.rdr-tailwind-scope .rdrInputRangeLabel {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  hyphens: auto;
+}
+
+.rdr-tailwind-scope .rdrDateRangePickerWrapper {
+  min-width: 0;
+}
+
+/* —— Impression : tableau de bord financier (rapport PDF) —— */
+@page {
+  size: A4 portrait;
+  margin: 15mm;
+}
+
+/* Emploi du temps (A4 paysage) — utilisé quand seul le gabarit est mis en page d’impression */
+@page emploi-timetable {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+/* Relevé & tableaux de paiements larges (Ctrl+P sur la page Paiements) */
+@page paiements-wide {
+  size: landscape;
+  margin: 10mm;
+}
+
+/* Gabarit react-to-print : reste dimensionné (pas display:none) pour clonage fiable */
+.timetable-print-surface--offscreen {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 1120px;
+  max-width: 100%;
+  min-height: 1px;
+  overflow: visible;
+  opacity: 0.01;
+  pointer-events: none;
+}
+
+@media print {
+  /* Masquer tout le chrome UI quand on imprime depuis le navigateur (Ctrl+P) */
+  .no-print {
+    display: none !important;
+  }
+
+  .edt-no-print {
+    display: none !important;
+  }
+
+  .timetable-print-surface {
+    page: emploi-timetable;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .timetable-print-surface--offscreen {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .timetable-print-inner {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .timetable-print-header {
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .timetable-print-table {
+    width: 100% !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+  }
+
+  .timetable-print-table thead th {
+    font-size: 11pt !important;
+    padding: 6px 5px !important;
+  }
+
+  .timetable-print-table tbody th[scope="row"] {
+    font-size: 11pt !important;
+    padding: 6px 5px !important;
+    min-height: 15mm !important;
+  }
+
+  .timetable-print-table tbody td {
+    font-size: 11pt !important;
+    padding: 6px 5px !important;
+    min-height: 15mm !important;
+    vertical-align: top !important;
+  }
+
+  .timetable-print-table tbody tr {
+    min-height: 15mm !important;
+  }
+
+  /* Rapport pointage personnel (Ctrl+P) : pleine largeur */
+  .pointage-personnel-print-root {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+    clip: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Bilan de caisse (officiel) : même bloc hors flux pour react-to-print */
+  .bilan-print-root {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+    clip: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .liste-eleves-classe-print-root {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+    clip: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .registration-form-print-root {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+    clip: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .paiements-print-root {
+    page: paiements-wide;
+    overflow: visible !important;
+  }
+
+  .paiements-print-root table {
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  .paiements-print-root td,
+  .paiements-print-root th {
+    white-space: normal !important;
+    word-break: break-word;
+  }
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  *::-webkit-scrollbar,
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-thumb {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  #root,
+  #app-dashboard-layout,
+  #app-main-content,
+  .dashboard-print-root {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #app-dashboard-layout {
+    display: block !important;
+    width: 100% !important;
+    background: #fff !important;
+  }
+
+  #app-main-column {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Barre latérale + navbar : jamais sur PDF / papier */
+  #app-sidebar,
+  #app-top-navbar,
+  .dashboard-print-hide {
+    display: none !important;
+  }
+
+  main {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  #app-main-content {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-print-root {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Blocs : ne jamais couper au milieu d’une carte / graphique / tableau */
+  .dashboard-print-root > header,
+  .dashboard-print-root section,
+  .dashboard-print-root [class*="grid"] > *,
+  .dashboard-print-root .h-80,
+  .dashboard-print-root .overflow-x-auto,
+  .dashboard-print-root table,
+  .dashboard-print-root .recharts-wrapper,
+  .dashboard-print-root .recharts-legend-wrapper,
+  .dashboard-print-root .recharts-surface {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Grille → empilement en colonne (A4 portrait), chaque enfant 100% pour limiter les coupures */
+  .dashboard-print-root [class*="grid"] {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  .dashboard-print-root [class*="grid"] > * {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .dashboard-print-root .h-80 {
+    height: 240px !important;
+    min-height: 200px !important;
+    max-height: 280px !important;
+  }
+
+  .dashboard-print-root .recharts-responsive-container,
+  .dashboard-print-root .recharts-wrapper {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .recharts-responsive-container {
+    width: 100% !important;
+    min-height: 200px !important;
+    height: 240px !important;
+    max-width: 100% !important;
+  }
+
+  .recharts-legend-wrapper,
+  .recharts-tooltip-wrapper {
+    z-index: 1;
+  }
+}
+
+/* Hors écran : le composant de rapport reste dans le DOM pour react-to-print */
+@media screen {
+  .pointage-personnel-print-root {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 100vw;
+    max-width: none;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .bilan-print-root {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 210mm;
+    max-width: none;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .liste-eleves-classe-print-root {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 210mm;
+    max-width: none;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .registration-form-print-root {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 100vw;
+    max-width: none;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+}
