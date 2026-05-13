@@ -130,8 +130,8 @@ REST_FRAMEWORK = {
     ],
 }
 
-# --- CORS / CSRF / cookies : frontend Vercel ↔ API Render ---
-CORS_ALLOW_ALL_ORIGINS = False
+# --- CORS / CSRF / cookies : frontend Vercel ↔ API Render (tests — CORS ouvert) ---
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "https://schoolerp-ten.vercel.app",
@@ -139,38 +139,18 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://samah-backend.onrender.com",
     "https://schoolerp-ten.vercel.app",
+    "https://samah-backend.onrender.com",
 ]
-_extra_csrf = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
-if _extra_csrf:
-    CSRF_TRUSTED_ORIGINS.extend(
-        [x.strip() for x in _extra_csrf.split(",") if x.strip()]
-    )
 
 SESSION_COOKIE_HTTPONLY = True   # JS cannot read the session cookie
 # 8-hour session lifetime
 SESSION_COOKIE_AGE = 8 * 60 * 60
 
-# Cross-site HTTPS (frontend Vercel → API Render) : session + CSRF en SameSite=None + Secure.
-# Render définit RENDER=true ; ainsi on reste correct même si DJANGO_DEBUG est mal laissé à True.
-_CROSS_SITE_COOKIE_FORCE = (
-    not DEBUG
-    or os.environ.get("RENDER", "").lower() == "true"
-    or os.environ.get("DJANGO_CROSS_SITE_COOKIES", "").lower() in ("1", "true", "yes")
-)
-
-if _CROSS_SITE_COOKIE_FORCE:
-    SESSION_COOKIE_SAMESITE = "None"
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SAMESITE = "None"
-    CSRF_COOKIE_SECURE = True
-else:
-    # Dev local HTTP (Vite ↔ runserver)
-    SESSION_COOKIE_SAMESITE = "Lax"
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SAMESITE = "Lax"
-    CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
 
 # --- E-mail / réinitialisation mot de passe (SPA) ---
 # URL du front (Vite) pour les liens dans les e-mails ; en prod : https://votredomaine.tld
