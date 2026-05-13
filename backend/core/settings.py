@@ -20,16 +20,14 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-change-me-in-p
 # False by default — must be explicitly opt-in via the environment variable.
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-# Déploiement test : défaut "*". En prod, définir DJANGO_ALLOWED_HOSTS (espaces ou virgules).
-_allowed_raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").strip()
-if _allowed_raw == "*":
-    ALLOWED_HOSTS: list[str] = ["*"]
-else:
-    ALLOWED_HOSTS = [
-        h.strip()
-        for h in _allowed_raw.replace(",", " ").split()
-        if h.strip()
-    ]
+# Hosts acceptés : Render prod, local, wildcard pour éviter les blocages durant les tests.
+# Sécurité : réduisez liste / retirez "*" une fois les domaines définitifs fixés.
+ALLOWED_HOSTS: list[str] = [
+    "samah-backend.onrender.com",
+    "localhost",
+    "127.0.0.1",
+    "*",
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -142,6 +140,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://samah-backend.onrender.com",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
