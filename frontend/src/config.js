@@ -1,7 +1,16 @@
-/** Origine du backend Django (sans slash final). Prod : définir VITE_API_URL sur Vercel. */
-const rawApiBase =
-  import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-export const API_BASE = String(rawApiBase).replace(/\/+$/, "");
+/**
+ * Origine du backend Django (sans slash final, sans suffixe /api — les routes utilisent `/api/...`).
+ * Si VITE_API_URL contient erreur commune `…/api`, on le retire pour éviter `/api/api/...`.
+ */
+function normalizeApiOrigin(raw) {
+  let s = String(raw ?? "").trim().replace(/\/+$/, "");
+  if (/\/api$/i.test(s)) {
+    s = s.replace(/\/api$/i, "").replace(/\/+$/, "");
+  }
+  return s || "http://localhost:8000";
+}
+
+export const API_BASE = normalizeApiOrigin(import.meta.env.VITE_API_URL);
 
 export const API_AUTH_CSRF = `${API_BASE}/api/auth/csrf/`;
 export const API_AUTH_LOGIN = `${API_BASE}/api/auth/login/`;

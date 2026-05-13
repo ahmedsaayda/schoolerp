@@ -53,6 +53,9 @@ class PasswordOpsApiRestrictionMiddleware(MiddlewareMixin):
     """
 
     _AUTH_API_PREFIXES = (
+        "/api/csrf",
+        "/api/login",
+        "/api/check-auth",
         "/api/auth/csrf",
         "/api/auth/login",
         "/api/auth/logout",

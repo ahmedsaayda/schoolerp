@@ -72,7 +72,7 @@ def csrf_cookie_api(request):
     return JsonResponse({"detail": "ok"})
 
 
-@ensure_csrf_cookie
+@csrf_exempt
 @require_POST
 def login_api(request):
     try:

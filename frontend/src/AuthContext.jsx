@@ -1,12 +1,22 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { API_AUTH_ME, STORAGE_AUTH_KEY, apiFetch } from "./config.js";
+import {
+  API_AUTH_CSRF,
+  API_AUTH_ME,
+  STORAGE_AUTH_KEY,
+  apiFetch,
+} from "./config.js";
 import { readStoredUserRaw, userPayloadFromApi } from "./authRoles.js";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readStoredUserRaw());
+
+  /** Jeton CSRF avant toute mutation (sessions cross-origin Vercel ↔ Render). */
+  useEffect(() => {
+    void apiFetch(API_AUTH_CSRF, { method: "GET", credentials: "include" });
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
