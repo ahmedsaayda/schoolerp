@@ -121,7 +121,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        "authentification.session_auth.SessionAuthenticationWithoutCSRF",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         # IsAuthenticated: any ViewSet without explicit permission_classes is
@@ -132,7 +132,7 @@ REST_FRAMEWORK = {
 
 # --- CORS / CSRF / cookies : frontend Vercel ↔ API Render ---
 CORS_ALLOW_ALL_ORIGINS = True  # Pour le test, on ouvre tout
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True  # Obligatoire pour sessionid avec fetch credentials: "include"
 CORS_ALLOWED_ORIGINS = [
     "https://schoolerp-ten.vercel.app",
     "http://localhost:5173",
@@ -143,14 +143,13 @@ CSRF_TRUSTED_ORIGINS = [
     "https://samah-backend.onrender.com",
 ]
 
+# Cookies session / CSRF : cross-site (Vercel → Render) avec HTTPS
 SESSION_COOKIE_HTTPONLY = True   # JS cannot read the session cookie
-# 8-hour session lifetime
-SESSION_COOKIE_AGE = 8 * 60 * 60
-
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_AGE = 8 * 60 * 60  # 8 h
+SESSION_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = True
 
 # --- E-mail / réinitialisation mot de passe (SPA) ---
 # URL du front (Vite) pour les liens dans les e-mails ; en prod : https://votredomaine.tld

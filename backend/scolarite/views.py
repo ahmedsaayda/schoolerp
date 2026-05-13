@@ -32,7 +32,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend, FilterSet
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError
-from rest_framework.authentication import SessionAuthentication
+from authentification.session_auth import SessionAuthenticationWithoutCSRF
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
@@ -348,7 +348,7 @@ class StatsDashboardLegacyView(APIView):
       le champ heures est `nombre_heures`.
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminRole]
 
     def get(self, request):
@@ -514,7 +514,7 @@ class DashboardStatsView(APIView):
     - depenses_par_categorie : montants par ``categorie`` (pour le graphique).
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrComptable]
 
     def get(self, request):
@@ -1066,7 +1066,7 @@ class FinancialAnalyticsView(APIView):
     Query : `period` = today | week | month | year
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminRole]
 
     def get(self, request):
@@ -1240,7 +1240,7 @@ class DashboardAnalyticsView(APIView):
     Séries : 6 mois calendaires se terminant au mois de `end_date`.
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminRole]
 
     def get(self, request):
@@ -1566,7 +1566,7 @@ class PointageFilter(FilterSet):
 
 
 class EleveViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated]
     serializer_class = EleveSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
@@ -1720,7 +1720,7 @@ class PaiementViewSet(viewsets.ModelViewSet):
     : part de l’annuité théorique (somme des encaissements de l’élève / (tarif mensuel × 10)) × 100.
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrComptableFinancial]
     queryset = (
         Paiement.objects.select_related("eleve", "session_caisse", "cree_par")
@@ -2922,7 +2922,7 @@ def _accorder_avance_response(
 
 
 class ProfesseurViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated]
     queryset = Professeur.objects.all().order_by("nom", "prenom")
     serializer_class = ProfesseurSerializer
@@ -3260,7 +3260,7 @@ class PersonnelViewSet(viewsets.ModelViewSet):
     Recherche : `?search=` sur nom, prénom, rôle.
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated]
     queryset = Personnel.objects.all()
     serializer_class = PersonnelSerializer
@@ -3454,7 +3454,7 @@ class PaiementSalaireViewSet(viewsets.ModelViewSet):
     Paiements de salaire du personnel. Création : enregistre aussi une `Depense` (catégorie Salaires).
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminRole]
     http_method_names = ["get", "post", "delete", "head", "options"]
     queryset = PaiementSalaire.objects.select_related("personnel", "professeur", "depense").order_by(
@@ -3476,7 +3476,7 @@ class PaiementSalaireViewSet(viewsets.ModelViewSet):
 class PointagePersonnelViewSet(viewsets.ModelViewSet):
     """Présence / retard du personnel (non enseignant). Même règle d’accès écriture que le pointage profs."""
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrPointageAgentWrite]
     queryset = (
         PointagePersonnel.objects.select_related("personnel")
@@ -3640,7 +3640,7 @@ class DepenseViewSet(viewsets.ModelViewSet):
     Tranche de dates : `?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD` sur `date_depense`.
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrComptable]
     queryset = Depense.objects.select_related("session_caisse", "cree_par").all().order_by("-date_depense", "-id")
     serializer_class = DepenseSerializer
@@ -3681,7 +3681,7 @@ class DepenseViewSet(viewsets.ModelViewSet):
 class EmploiDuTempsViewSet(viewsets.ModelViewSet):
     """CRUD emploi du temps (séances datées) — réservé au rôle ADMIN."""
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminRole]
     serializer_class = EmploiDuTempsSerializer
 
@@ -3905,7 +3905,7 @@ class EmploiDuTempsViewSet(viewsets.ModelViewSet):
 class ClasseViewSet(viewsets.ModelViewSet):
     """Classes (référentiel) — écriture ADMIN ; lecture pour scolarité / comptabilité / saisie élèves."""
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminRole]
     serializer_class = ClasseSerializer
     filter_backends = [DjangoFilterBackend]
@@ -4046,7 +4046,7 @@ _SESSIONS_DU_JOUR_API_KEYS = (
 
 
 class PointageViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrPointageAgentWrite]
     queryset = (
         Pointage.objects.select_related("professeur", "classe", "emploi_du_temps")
@@ -4236,7 +4236,7 @@ class PointageViewSet(viewsets.ModelViewSet):
 
 
 class AvanceSalaireViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrComptableFinancial]
     queryset = (
         AvanceSalaire.objects.select_related("professeur").all().order_by("-date", "-id")
@@ -4623,7 +4623,7 @@ class BanqueViewSet(viewsets.ViewSet):
     Solde unique « banque interne » et transferts caisse ⟷ banque (multipart).
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrComptableFinancial]
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
@@ -4767,7 +4767,7 @@ class CalendrierScolaireViewSet(viewsets.ModelViewSet):
     Consommation future par le pointage et l’emploi du temps.
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminRole]
     serializer_class = CalendrierScolaireSerializer
     queryset = CalendrierScolaire.objects.all()
@@ -4780,7 +4780,7 @@ class CaisseViewSet(viewsets.ViewSet):
     Réservé aux rôles ADMIN et COMPTABLE (``IsAdminOrComptableFinancial``).
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrComptableFinancial]
 
     @action(detail=False, methods=["get"], url_path="journal")
@@ -4989,7 +4989,7 @@ class MouvementBanqueViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class SessionCaisseViewSet(viewsets.ModelViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     permission_classes = [IsAuthenticated, IsAdminOrComptableFinancial]
     queryset = (
         SessionCaisse.objects.select_related("ouvert_par")

@@ -15,7 +15,7 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 from rest_framework import viewsets
-from rest_framework.authentication import SessionAuthentication
+from authentification.session_auth import SessionAuthenticationWithoutCSRF
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -283,7 +283,7 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     Gestion des comptes (ADMIN, POINTAGE_AGENT, COMPTABLE) — réservé au rôle ADMIN.
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     serializer_class = StaffUserSerializer
     permission_classes = [IsAuthenticated, IsAdminRole]
     http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
@@ -352,7 +352,7 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     Métadonnées : GET /api/audit-logs/models/ — modèles (Django scolarite/authentification + déjà journalisés).
     """
 
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
     serializer_class = AuditLogSerializer
     permission_classes = [IsAuthenticated, IsSuperAdminRole]
 

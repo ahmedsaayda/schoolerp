@@ -114,11 +114,10 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 /**
  * Central fetch wrapper for the Django API.
  *
- * - Always sends session cookies (credentials: "include").
- * - For state-mutating requests, automatically reads the csrftoken cookie
- *   that Django sets and forwards it as the X-CSRFToken header, satisfying
- *   DRF's standard SessionAuthentication CSRF check.
- * - Caller-supplied headers always take precedence (spread last).
+ * - Toujours `credentials: "include"` pour envoyer sessionid (ne peut pas être écrasé par `options`).
+ * - Envoie `X-CSRFToken` si le cookie `csrftoken` est lisible (même origine) ; avec l’API sur un
+ *   autre domaine, le backend utilise `SessionAuthenticationWithoutCSRF`.
+ * - Les en-têtes passés par l’appellant priment sur les défauts (sauf credentials).
  */
 export function apiFetch(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
@@ -138,12 +137,14 @@ export function apiFetch(url, options = {}) {
   const defaultHeaders = isFormData
     ? { Accept: "application/json", ...csrfHeaders }
     : { Accept: "application/json", "Content-Type": "application/json", ...csrfHeaders };
+
+  const { headers: callerHeaders = {}, ...rest } = options;
   return fetch(url, {
-    credentials: "include",
-    ...options,
+    ...rest,
     headers: {
       ...defaultHeaders,
-      ...options.headers,
+      ...callerHeaders,
     },
+    credentials: "include",
   });
 }
