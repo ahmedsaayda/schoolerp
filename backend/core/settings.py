@@ -152,14 +152,21 @@ SESSION_COOKIE_HTTPONLY = True   # JS cannot read the session cookie
 # 8-hour session lifetime
 SESSION_COOKIE_AGE = 8 * 60 * 60
 
-# Production (Render API + Vercel front) : cookies cross-site nécessitent SameSite=None et Secure.
-# Local (DEBUG + HTTP) : Lax et sans Secure pour que session / CSRF fonctionnent sur localhost.
-if not DEBUG:
+# Cross-site HTTPS (frontend Vercel → API Render) : session + CSRF en SameSite=None + Secure.
+# Render définit RENDER=true ; ainsi on reste correct même si DJANGO_DEBUG est mal laissé à True.
+_CROSS_SITE_COOKIE_FORCE = (
+    not DEBUG
+    or os.environ.get("RENDER", "").lower() == "true"
+    or os.environ.get("DJANGO_CROSS_SITE_COOKIES", "").lower() in ("1", "true", "yes")
+)
+
+if _CROSS_SITE_COOKIE_FORCE:
     SESSION_COOKIE_SAMESITE = "None"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SAMESITE = "None"
     CSRF_COOKIE_SECURE = True
 else:
+    # Dev local HTTP (Vite ↔ runserver)
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SAMESITE = "Lax"
