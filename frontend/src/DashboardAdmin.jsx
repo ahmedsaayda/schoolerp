@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -57,7 +57,7 @@ function userInitials(sessionLabel) {
 
 
 
-function getInitialSidebarOpen() {
+function getInitialDrawerOpen() {
 
   if (typeof window === "undefined") {
 
@@ -79,15 +79,40 @@ export default function DashboardAdmin() {
 
   const { user, refreshUser, setUser } = useAuth();
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(getInitialSidebarOpen);
+  const [isOpen, setIsOpen] = useState(getInitialDrawerOpen);
 
-
+  const closeDrawerIfMobile = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setIsOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
 
     refreshUser();
 
   }, [refreshUser]);
+
+  useEffect(() => {
+    function syncBodyScrollLock() {
+      const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+      if (mobile && isOpen) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "";
+      }
+    }
+
+    syncBodyScrollLock();
+    window.addEventListener("resize", syncBodyScrollLock);
+    return () => {
+      window.removeEventListener("resize", syncBodyScrollLock);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
 
 
@@ -117,7 +142,7 @@ export default function DashboardAdmin() {
 
     }
 
-    const id = window.setTimeout(() => setIsSidebarOpen(false), 0);
+    const id = window.setTimeout(() => setIsOpen(false), 0);
 
     return () => clearTimeout(id);
 
@@ -199,27 +224,13 @@ export default function DashboardAdmin() {
       className="flex h-screen overflow-hidden bg-slate-50 font-sans antialiased dark:bg-slate-950"
     >
 
-      {isSidebarOpen ? (
-
-        <button
-
-          type="button"
-
-          aria-label="Fermer le menu"
-
-          className="dashboard-print-hide fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[1px] transition-opacity duration-300 md:hidden"
-
-          onClick={() => setIsSidebarOpen(false)}
-
-        />
-
-      ) : null}
-
-
-
       <Sidebar
 
-        isSidebarOpen={isSidebarOpen}
+        isOpen={isOpen}
+
+        onClose={() => setIsOpen(false)}
+
+        onNavigate={closeDrawerIfMobile}
 
         layoutHomeTo={layoutHomeTo}
 
@@ -263,11 +274,13 @@ export default function DashboardAdmin() {
 
               type="button"
 
-              onClick={() => setIsSidebarOpen((open) => !open)}
+              onClick={() => setIsOpen((open) => !open)}
 
               aria-controls="app-sidebar"
 
-              aria-label={isSidebarOpen ? "Réduire le menu latéral" : "Agrandir le menu latéral"}
+              aria-expanded={isOpen}
+
+              aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
 
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
 

@@ -42,7 +42,7 @@ function NavSection({ title, children, collapsed }) {
   );
 }
 
-function NavItem({ to, end, icon, label, collapsed }) {
+function NavItem({ to, end, icon, label, collapsed, onNavigate }) {
   const IconGlyph = icon;
   return (
     <NavLink
@@ -51,6 +51,7 @@ function NavItem({ to, end, icon, label, collapsed }) {
       title={label}
       aria-label={collapsed ? label : undefined}
       className={(state) => navLinkClass(state, collapsed)}
+      onClick={() => onNavigate?.()}
     >
       <IconGlyph className="h-5 w-5 shrink-0 opacity-95" aria-hidden />
       <span className={collapsed ? "hidden" : ""}>{label}</span>
@@ -59,7 +60,9 @@ function NavItem({ to, end, icon, label, collapsed }) {
 }
 
 export default function Sidebar({
-  isSidebarOpen,
+  isOpen,
+  onClose,
+  onNavigate,
   layoutHomeTo,
   onLogout,
   elevesAgentOnly,
@@ -72,23 +75,15 @@ export default function Sidebar({
   showSettings,
   passwordOpsOnly = false,
 }) {
-  const collapsed = !isSidebarOpen;
+  const collapsed = !isOpen;
 
-  return (
-    <aside
-      id="app-sidebar"
-      className={[
-        "print:hidden flex h-full min-h-0 shrink-0 flex-col overflow-y-auto border-r border-slate-800/80 bg-slate-950 text-white transition-all duration-300 ease-in-out",
-        "fixed inset-y-0 left-0 z-50 w-64 md:relative md:z-auto",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "md:translate-x-0",
-        isSidebarOpen ? "md:w-64" : "md:w-20",
-      ].join(" ")}
-    >
+  const sidebarBody = (
+    <>
       <div
         className={[
           "border-b border-slate-800/90 py-4 transition-all duration-300 ease-in-out",
           collapsed ? "px-0 md:flex md:justify-center md:px-0" : "px-4",
+          "pt-[max(1rem,env(safe-area-inset-top))] md:pt-4",
         ].join(" ")}
       >
         <Link
@@ -99,6 +94,7 @@ export default function Sidebar({
             "flex items-center text-inherit no-underline hover:opacity-90",
             collapsed ? "justify-center gap-0 md:w-full" : "justify-center gap-2.5 md:justify-start",
           ].join(" ")}
+          onClick={() => onNavigate?.()}
         >
           <img
             src={logoSchoolPublicUrl()}
@@ -130,66 +126,99 @@ export default function Sidebar({
               icon={KeyRound}
               label="Réinitialisation e-mail"
               collapsed={collapsed}
+              onNavigate={onNavigate}
             />
           </NavSection>
         ) : elevesAgentOnly ? (
           <NavSection title="Navigation" collapsed={collapsed}>
-            <NavItem to="/eleves" icon={Users} label="Élèves" collapsed={collapsed} />
-            <NavItem to="/pointage-quotidien" icon={ClipboardCheck} label="Pointage Quotidien" collapsed={collapsed} />
-            <NavItem to="/pointage-personnel" icon={UserCheck} label="Pointage Personnel" collapsed={collapsed} />
+            <NavItem to="/eleves" icon={Users} label="Élèves" collapsed={collapsed} onNavigate={onNavigate} />
+            <NavItem
+              to="/pointage-quotidien"
+              icon={ClipboardCheck}
+              label="Pointage Quotidien"
+              collapsed={collapsed}
+              onNavigate={onNavigate}
+            />
+            <NavItem
+              to="/pointage-personnel"
+              icon={UserCheck}
+              label="Pointage Personnel"
+              collapsed={collapsed}
+              onNavigate={onNavigate}
+            />
           </NavSection>
         ) : (
           <>
             {showScolarite ? (
               <NavSection title="Scolarité" collapsed={collapsed}>
-                <NavItem to="/dashboard" end icon={LayoutDashboard} label="Tableau de bord" collapsed={collapsed} />
-                <NavItem to="/eleves" icon={Users} label="Élèves" collapsed={collapsed} />
-                <NavItem to="/gestion-classes" icon={School} label="Classes" collapsed={collapsed} />
+                <NavItem
+                  to="/dashboard"
+                  end
+                  icon={LayoutDashboard}
+                  label="Tableau de bord"
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+                <NavItem to="/eleves" icon={Users} label="Élèves" collapsed={collapsed} onNavigate={onNavigate} />
+                <NavItem to="/gestion-classes" icon={School} label="Classes" collapsed={collapsed} onNavigate={onNavigate} />
               </NavSection>
             ) : null}
 
             {showFinance ? (
               <NavSection title="Finance" collapsed={collapsed}>
-                <NavItem to="/paiements" icon={CreditCard} label="Paiements" collapsed={collapsed} />
+                <NavItem to="/paiements" icon={CreditCard} label="Paiements" collapsed={collapsed} onNavigate={onNavigate} />
                 {showDepenses ? (
-                  <NavItem to="/depenses" icon={Receipt} label="Dépenses" collapsed={collapsed} />
+                  <NavItem to="/depenses" icon={Receipt} label="Dépenses" collapsed={collapsed} onNavigate={onNavigate} />
                 ) : null}
-                <NavItem to="/caisse" icon={Landmark} label="Caisse & historique" collapsed={collapsed} />
+                <NavItem to="/caisse" icon={Landmark} label="Caisse & historique" collapsed={collapsed} onNavigate={onNavigate} />
                 <NavItem
                   to="/caisse-justificatifs"
                   icon={FileText}
                   label="Historique et Justificatifs Banque"
                   collapsed={collapsed}
+                  onNavigate={onNavigate}
                 />
               </NavSection>
             ) : null}
 
             {showRhPayrollOnly ? (
               <NavSection title="Ressources humaines" collapsed={collapsed}>
-                <NavItem to="/professeurs" icon={Presentation} label="Professeurs" collapsed={collapsed} />
-                <NavItem to="/personnel" icon={Briefcase} label="Personnel" collapsed={collapsed} />
+                <NavItem to="/professeurs" icon={Presentation} label="Professeurs" collapsed={collapsed} onNavigate={onNavigate} />
+                <NavItem to="/personnel" icon={Briefcase} label="Personnel" collapsed={collapsed} onNavigate={onNavigate} />
               </NavSection>
             ) : null}
 
             {showFullRh ? (
               <NavSection title="Direction" collapsed={collapsed}>
-                <NavItem to="/pointage-personnel" icon={UserCheck} label="Pointage Personnel" collapsed={collapsed} />
-                <NavItem to="/personnel" icon={Briefcase} label="Personnel" collapsed={collapsed} />
+                <NavItem
+                  to="/pointage-personnel"
+                  icon={UserCheck}
+                  label="Pointage Personnel"
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+                <NavItem to="/personnel" icon={Briefcase} label="Personnel" collapsed={collapsed} onNavigate={onNavigate} />
               </NavSection>
             ) : null}
 
             {showFullRh ? (
               <NavSection title="Ressources humaines" collapsed={collapsed}>
-                <NavItem to="/professeurs" icon={Presentation} label="Professeurs" collapsed={collapsed} />
-                <NavItem to="/pointage-quotidien" icon={ClipboardCheck} label="Pointage" collapsed={collapsed} />
-                <NavItem to="/emploi-du-temps" icon={Calendar} label="Emploi du temps" collapsed={collapsed} />
-                <NavItem to="/historique-emploi" icon={History} label="Imprimer Emploi" collapsed={collapsed} />
+                <NavItem to="/professeurs" icon={Presentation} label="Professeurs" collapsed={collapsed} onNavigate={onNavigate} />
+                <NavItem
+                  to="/pointage-quotidien"
+                  icon={ClipboardCheck}
+                  label="Pointage"
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+                <NavItem to="/emploi-du-temps" icon={Calendar} label="Emploi du temps" collapsed={collapsed} onNavigate={onNavigate} />
+                <NavItem to="/historique-emploi" icon={History} label="Imprimer Emploi" collapsed={collapsed} onNavigate={onNavigate} />
               </NavSection>
             ) : null}
 
             {showAudit ? (
               <NavSection title="Système" collapsed={collapsed}>
-                <NavItem to="/audit-logs" icon={ScrollText} label="Journaux d'audit" collapsed={collapsed} />
+                <NavItem to="/audit-logs" icon={ScrollText} label="Journaux d'audit" collapsed={collapsed} onNavigate={onNavigate} />
               </NavSection>
             ) : null}
           </>
@@ -203,7 +232,7 @@ export default function Sidebar({
             collapsed ? "px-0 md:px-1" : "px-2",
           ].join(" ")}
         >
-          <NavItem to="/settings" icon={Settings} label="Paramètres" collapsed={collapsed} />
+          <NavItem to="/settings" icon={Settings} label="Paramètres" collapsed={collapsed} onNavigate={onNavigate} />
         </div>
       ) : null}
 
@@ -211,11 +240,15 @@ export default function Sidebar({
         className={[
           "border-t border-slate-800/90 p-3 transition-all duration-300 ease-in-out",
           collapsed ? "px-0 md:px-1" : "",
+          "pb-[max(0.75rem,env(safe-area-inset-bottom))] md:pb-3",
         ].join(" ")}
       >
         <button
           type="button"
-          onClick={onLogout}
+          onClick={() => {
+            onNavigate?.();
+            onLogout();
+          }}
           title="Déconnexion"
           aria-label="Déconnexion"
           className={[
@@ -227,6 +260,48 @@ export default function Sidebar({
           <span className={collapsed ? "hidden" : ""}>Déconnexion</span>
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile drawer : overlay inset-0 + panneau (z-50 au-dessus du contenu / date pickers en z-30–40) */}
+      <div
+        className={[
+          "print:hidden md:hidden fixed inset-0 z-50 flex transition-[visibility] duration-0",
+          isOpen ? "pointer-events-auto visible" : "pointer-events-none invisible delay-300",
+        ].join(" ")}
+        aria-hidden={!isOpen}
+      >
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          className={[
+            "absolute inset-0 bg-slate-950/65 backdrop-blur-[2px] transition-opacity duration-300 ease-out",
+            isOpen ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+          onClick={onClose}
+        />
+        <aside
+          id="app-sidebar"
+          className={[
+            "relative z-10 flex h-full min-h-0 w-[min(85vw,16rem)] max-w-[280px] shrink-0 flex-col overflow-y-auto overscroll-contain border-r border-slate-800/80 bg-slate-950 text-white shadow-2xl transition-transform duration-300 ease-out",
+            isOpen ? "translate-x-0" : "-translate-x-full",
+          ].join(" ")}
+        >
+          {sidebarBody}
+        </aside>
+      </div>
+
+      {/* Desktop : rail latéral */}
+      <aside
+        className={[
+          "print:hidden hidden h-full min-h-0 shrink-0 flex-col overflow-y-auto border-r border-slate-800/80 bg-slate-950 text-white transition-all duration-300 ease-in-out md:flex",
+          isOpen ? "md:w-64" : "md:w-20",
+        ].join(" ")}
+      >
+        {sidebarBody}
+      </aside>
+    </>
   );
 }
