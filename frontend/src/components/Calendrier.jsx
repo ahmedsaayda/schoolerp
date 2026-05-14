@@ -163,20 +163,15 @@ export default function Calendrier({
           "[&_.fc]:max-w-full [&_.fc]:font-sans",
           "[&_.fc-toolbar]:flex-wrap [&_.fc-toolbar]:gap-2 [&_.fc-toolbar]:py-2",
           "[&_.fc-toolbar-chunk]:flex [&_.fc-toolbar-chunk]:flex-wrap [&_.fc-toolbar-chunk]:items-center [&_.fc-toolbar-chunk]:gap-1",
-          // Boutons toolbar : compacts sur mobile, normaux sur desktop
           "[&_.fc-button]:rounded-lg [&_.fc-button]:border-[#e2e8f0] [&_.fc-button]:bg-[#f8fafc] [&_.fc-button]:px-2.5 [&_.fc-button]:py-1.5 [&_.fc-button]:text-[11px] [&_.fc-button]:font-semibold [&_.fc-button]:text-[#334155] [&_.fc-button]:shadow-sm",
           "md:[&_.fc-button]:px-3 md:[&_.fc-button]:py-1.5 md:[&_.fc-button]:text-sm",
           "[&_.fc-button-primary:not(:disabled)]:border-[#2563eb] [&_.fc-button-primary:not(:disabled)]:bg-[#3b82f6] [&_.fc-button-primary:not(:disabled)]:text-white",
-          // Titre toolbar
           "[&_.fc-toolbar-title]:text-sm [&_.fc-toolbar-title]:font-bold [&_.fc-toolbar-title]:text-[#0f172a] md:[&_.fc-toolbar-title]:text-lg",
-          // Événements liste et grille
           "[&_.fc-list-event]:text-[11px] md:[&_.fc-list-event]:text-sm",
           "[&_.fc-daygrid-event]:text-[11px] md:[&_.fc-daygrid-event]:text-sm",
-          // Largeur totale, pas de scroll horizontal
           "[&_.fc-list-table]:w-full",
           "[&_.fc-list]:w-full [&_.fc-list]:overflow-x-hidden",
           "[&_.fc-scrollgrid]:w-full [&_.fc-scrollgrid-section]:overflow-visible",
-          // Pas de bordure externe sur la vue liste
           "[&_.fc-list]:border-none",
         ].join(" ")}
       >
@@ -209,6 +204,21 @@ export default function Calendrier({
             }
           }}
           eventClick={handleEventClick}
+          eventDidMount={(info) => {
+            if (info.view.type !== "listMonth") return;
+            const color = info.event.backgroundColor;
+            if (!color) return;
+            // Colored left accent on each list row td cells
+            info.el.querySelectorAll("td").forEach((td) => {
+              if (td.classList.contains("fc-list-event-graphic")) return;
+              td.style.borderLeft = "none";
+            });
+            const graphicTd = info.el.querySelector(".fc-list-event-graphic");
+            if (graphicTd) {
+              graphicTd.style.borderLeft = `3px solid ${color}`;
+              graphicTd.style.paddingLeft = "8px";
+            }
+          }}
           dateClick={
             isEditing && onCreateFromDay
               ? (arg) => {
@@ -305,65 +315,131 @@ export default function Calendrier({
       ) : null}
 
       <style>{`
+/* ── Vue liste : tous écrans ────────────────────────────── */
+.cal-host .fc-list {
+  border: none !important;
+}
+.cal-host .fc-list-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+.cal-host .fc-list-event td {
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  background: transparent !important;
+}
+.cal-host .fc-list-event:hover td {
+  background: #f8fafc !important;
+  cursor: pointer;
+}
+.cal-host .fc-list-day th {
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+}
+.cal-host .fc-list-day-cushion {
+  background: #f1f5f9 !important;
+  padding: 5px 12px !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+.cal-host .fc-list-day-text,
+.cal-host .fc-list-day-side-text {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #475569 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+.cal-host .fc-list-empty {
+  border: none !important;
+  background: transparent !important;
+}
+.cal-host .fc-list-empty-cushion {
+  font-size: 0.85rem !important;
+  color: #94a3b8 !important;
+}
+
+/* Dot de couleur bien visible */
+.cal-host .fc-list-event-dot {
+  display: inline-block !important;
+  width: 12px !important;
+  height: 12px !important;
+  min-width: 12px !important;
+  border-radius: 50% !important;
+  border-width: 6px !important;
+  vertical-align: middle !important;
+}
+
 /* ── Mobile : vue liste (< 768 px) ─────────────────────── */
 @media (max-width: 767px) {
   .cal-host .fc {
     font-size: 0.82rem !important;
   }
 
-  /* Toolbar compact */
+  /* Toolbar : une seule ligne horizontale compacte */
   .cal-host .fc .fc-toolbar {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 4px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    gap: 0 !important;
+    padding: 4px 0 !important;
   }
   .cal-host .fc .fc-toolbar-chunk {
     justify-content: center !important;
+    flex-wrap: nowrap !important;
   }
   .cal-host .fc .fc-toolbar-title {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
     text-align: center !important;
+    white-space: nowrap !important;
+  }
+  /* Boutons prev/next : icônes seules, compactes */
+  .cal-host .fc .fc-prev-button,
+  .cal-host .fc .fc-next-button {
+    padding: 5px 8px !important;
+    font-size: 0.75rem !important;
+  }
+  /* Cacher le bouton "Aujourd'hui" sur mobile */
+  .cal-host .fc .fc-today-button {
+    display: none !important;
   }
 
-  /* Vue harness : hauteur auto, jamais fixée */
+  /* Hauteur auto, jamais fixée */
   .cal-host .fc .fc-view-harness {
     height: auto !important;
-    min-height: 180px !important;
+    min-height: 120px !important;
   }
 
-  /* Conteneur liste : pleine largeur, pas de scroll horizontal */
+  /* Liste pleine largeur, sans scroll horizontal */
   .cal-host .fc-list {
     width: 100% !important;
-    border: none !important;
     overflow-x: hidden !important;
   }
 
-  /* Table liste : layout fixe pour que les colonnes respectent les largeurs */
-  .cal-host .fc-list-table {
-    width: 100% !important;
-    table-layout: fixed !important;
-  }
-
-  /* Colonne graphique (dot) : largeur fixe réduite */
+  /* Colonne graphique (dot + accent gauche) */
   .cal-host .fc-list-event-graphic {
-    width: 28px !important;
-    padding-left: 8px !important;
-    padding-right: 4px !important;
+    width: 24px !important;
+    padding-left: 0 !important;
+    padding-right: 6px !important;
     vertical-align: middle !important;
   }
 
-  /* Colonne heure : largeur fixe */
+  /* Colonne heure */
   .cal-host .fc-list-event-time {
-    width: 72px !important;
-    font-size: 0.7rem !important;
+    width: 68px !important;
+    font-size: 0.68rem !important;
     font-family: ui-monospace, SFMono-Regular, monospace !important;
     color: #64748b !important;
     white-space: nowrap !important;
-    padding: 9px 6px 9px 0 !important;
+    padding: 10px 6px 10px 0 !important;
     vertical-align: middle !important;
   }
 
-  /* Colonne titre : prend le reste, tronqué si trop long */
+  /* Colonne titre */
   .cal-host .fc-list-event-title {
     font-size: 0.82rem !important;
     font-weight: 600 !important;
@@ -371,63 +447,13 @@ export default function Calendrier({
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
-    padding: 9px 8px 9px 0 !important;
-    vertical-align: middle !important;
-    /* width: auto — prend le reste dans table-layout:fixed */
-  }
-
-  /* Ligne événement */
-  .cal-host .fc-list-event td {
-    border-bottom: 1px solid #f1f5f9 !important;
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    background: transparent !important;
-  }
-  .cal-host .fc-list-event:hover td {
-    background: #f8fafc !important;
-  }
-
-  /* Dot de couleur : grand et bien visible */
-  .cal-host .fc-list-event-dot {
-    display: inline-block !important;
-    width: 10px !important;
-    height: 10px !important;
-    min-width: 10px !important;
-    border-radius: 50% !important;
-    border-width: 5px !important;
+    padding: 10px 8px 10px 2px !important;
     vertical-align: middle !important;
   }
-
-  /* En-tête de jour */
-  .cal-host .fc-list-day th {
-    padding: 0 !important;
-    background: none !important;
-    border: none !important;
-  }
-  .cal-host .fc-list-day-cushion {
-    background: #f1f5f9 !important;
-    padding: 5px 10px !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    border-top: 1px solid #e2e8f0 !important;
-  }
-  .cal-host .fc-list-day-text,
-  .cal-host .fc-list-day-side-text {
-    font-size: 0.72rem !important;
-    font-weight: 700 !important;
-    color: #475569 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-  }
-
-  /* Message "aucun événement" */
-  .cal-host .fc-list-empty {
-    border: none !important;
-    background: transparent !important;
-  }
-  .cal-host .fc-list-empty-cushion {
-    font-size: 0.82rem !important;
-    color: #94a3b8 !important;
+  /* Lien dans le titre : pas de couleur override */
+  .cal-host .fc-list-event-title a {
+    color: inherit !important;
+    text-decoration: none !important;
   }
 }
       `}</style>
