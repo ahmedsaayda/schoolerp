@@ -835,7 +835,7 @@ export default function EmploiDuTempsPage() {
           </div>
         ) : (
           <section
-            className={`overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition-[box-shadow,border-color] duration-200 ${
+            className={`overflow-hidden overflow-x-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition-[box-shadow,border-color] duration-200 ${
               isEditing ? "border-2 border-amber-300/80 ring-2 ring-amber-200/50" : "border border-[#e2e8f0]"
             }`}
             aria-label={`Emploi du temps ${appliedClasseNom || appliedClasseId}`}
@@ -869,7 +869,7 @@ export default function EmploiDuTempsPage() {
               )}
             </div>
 
-            <div className="w-full min-w-0 max-w-full px-1 md:px-2">
+            <div className="w-full min-w-0 max-w-full overflow-x-hidden px-1 md:px-2">
               <Calendrier
                 sessionsWithMeta={sessionsWithMeta}
                 refreshKey={calendarRefreshKey}

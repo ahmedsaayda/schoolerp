@@ -260,7 +260,7 @@ export default function DashboardAdmin() {
 
       <div
         id="app-main-column"
-        className="flex min-w-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out"
+        className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-hidden transition-all duration-300 ease-in-out"
       >
 
         <header
@@ -344,11 +344,11 @@ export default function DashboardAdmin() {
 
 
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-slate-50 print:min-h-0 print:overflow-visible dark:bg-slate-950">
+        <main className="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-slate-50 print:min-h-0 print:overflow-visible dark:bg-slate-950">
 
           <div
             id="app-main-content"
-            className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col px-4 py-6 sm:px-6 md:py-8 lg:px-8"
+            className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-x-hidden px-4 py-6 max-md:pt-8 sm:px-6 md:py-8 lg:px-8"
           >
 
             {showFinance ? (
@@ -357,7 +357,7 @@ export default function DashboardAdmin() {
               </div>
             ) : null}
 
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-x-hidden">
               <SessionRequirementProvider>
                 <Outlet />
               </SessionRequirementProvider>

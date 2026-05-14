@@ -17,6 +17,7 @@ import {
   Settings,
   UserCheck,
   Users,
+  X,
 } from "lucide-react";
 
 import { SCHOOL_NAME, SCHOOL_TAGLINE, logoSchoolPublicUrl } from "../branding.js";
@@ -83,7 +84,7 @@ export default function Sidebar({
         className={[
           "border-b border-slate-800/90 py-4 transition-all duration-300 ease-in-out",
           collapsed ? "px-0 md:flex md:justify-center md:px-0" : "px-4",
-          "pt-[max(1rem,env(safe-area-inset-top))] md:pt-4",
+          "pt-2 md:pt-[max(1rem,env(safe-area-inset-top))]",
         ].join(" ")}
       >
         <Link
@@ -265,31 +266,40 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Mobile drawer : overlay inset-0 + panneau (z-50 au-dessus du contenu / date pickers en z-30–40) */}
+      {/* Mobile : tiroir uniquement si isOpen — entièrement retiré du flux quand fermé */}
       <div
         className={[
-          "print:hidden md:hidden fixed inset-0 z-50 flex transition-[visibility] duration-0",
-          isOpen ? "pointer-events-auto visible" : "pointer-events-none invisible delay-300",
+          "print:hidden md:hidden fixed inset-0 z-50",
+          isOpen ? "" : "hidden",
         ].join(" ")}
         aria-hidden={!isOpen}
       >
         <button
           type="button"
           aria-label="Fermer le menu"
-          className={[
-            "absolute inset-0 bg-slate-950/65 backdrop-blur-[2px] transition-opacity duration-300 ease-out",
-            isOpen ? "opacity-100" : "opacity-0",
-          ].join(" ")}
+          className="absolute inset-0 z-0 bg-slate-950/65 backdrop-blur-[2px]"
           onClick={onClose}
         />
         <aside
           id="app-sidebar"
-          className={[
-            "relative z-10 flex h-full min-h-0 w-[min(85vw,16rem)] max-w-[280px] shrink-0 flex-col overflow-y-auto overscroll-contain border-r border-slate-800/80 bg-slate-950 text-white shadow-2xl transition-transform duration-300 ease-out",
-            isOpen ? "translate-x-0" : "-translate-x-full",
-          ].join(" ")}
+          className="relative z-10 flex h-full min-h-0 w-[min(85vw,16rem)] max-w-[280px] shrink-0 flex-col overflow-hidden border-r border-slate-800/80 bg-slate-950 text-white shadow-2xl"
         >
-          {sidebarBody}
+          <div
+            className={[
+              "flex shrink-0 items-center justify-end border-b border-slate-800/90 bg-slate-950",
+              "px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]",
+            ].join(" ")}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer le menu"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-200 transition-colors hover:bg-slate-800 hover:text-white"
+            >
+              <X className="h-6 w-6" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">{sidebarBody}</div>
         </aside>
       </div>
 

@@ -138,7 +138,6 @@ export default function Calendrier({
           "[&_.fc-toolbar-title]:text-sm [&_.fc-toolbar-title]:font-semibold [&_.fc-toolbar-title]:text-[#0f172a] md:[&_.fc-toolbar-title]:text-lg",
           "[&_.fc-list-event]:text-[11px] md:[&_.fc-list-event]:text-sm",
           "[&_.fc-daygrid-event]:text-[11px] md:[&_.fc-daygrid-event]:text-sm",
-          "max-md:[&_.fc-scroller]:max-h-[min(58vh,520px)] max-md:[&_.fc-scroller]:overflow-y-auto [&_.fc-scroller-liquid]:max-h-none",
           "[&_.fc-list-table]:w-full",
           "[&_.fc-scrollgrid]:w-full [&_.fc-scrollgrid-section]:overflow-visible",
         ].join(" ")}
@@ -190,7 +189,7 @@ export default function Calendrier({
       </div>
 
       {preview && previewSession ? (
-        <div className="fixed inset-0 z-[80]" role="presentation">
+        <div className="fixed inset-0 z-[60]" role="presentation">
           <button
             type="button"
             className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
@@ -266,6 +265,24 @@ export default function Calendrier({
           </div>
         </div>
       ) : null}
+
+      <style>{`
+@media (max-width: 767px) {
+  .cal-host .fc {
+    font-size: 0.8rem !important;
+  }
+  .cal-host .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .cal-host .fc .fc-toolbar-title {
+    font-size: 1.1rem !important;
+  }
+  .cal-host .fc .fc-view-harness {
+    height: 400px !important;
+  }
+}
+      `}</style>
     </div>
   );
 }
