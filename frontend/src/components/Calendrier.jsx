@@ -163,14 +163,21 @@ export default function Calendrier({
           "[&_.fc]:max-w-full [&_.fc]:font-sans",
           "[&_.fc-toolbar]:flex-wrap [&_.fc-toolbar]:gap-2 [&_.fc-toolbar]:py-2",
           "[&_.fc-toolbar-chunk]:flex [&_.fc-toolbar-chunk]:flex-wrap [&_.fc-toolbar-chunk]:items-center [&_.fc-toolbar-chunk]:gap-1",
-          "[&_.fc-button]:rounded-lg [&_.fc-button]:border-[#e2e8f0] [&_.fc-button]:bg-[#f8fafc] [&_.fc-button]:px-2 [&_.fc-button]:py-1 [&_.fc-button]:text-[11px] [&_.fc-button]:font-semibold [&_.fc-button]:text-[#334155] [&_.fc-button]:shadow-sm",
+          // Boutons toolbar : compacts sur mobile, normaux sur desktop
+          "[&_.fc-button]:rounded-lg [&_.fc-button]:border-[#e2e8f0] [&_.fc-button]:bg-[#f8fafc] [&_.fc-button]:px-2.5 [&_.fc-button]:py-1.5 [&_.fc-button]:text-[11px] [&_.fc-button]:font-semibold [&_.fc-button]:text-[#334155] [&_.fc-button]:shadow-sm",
           "md:[&_.fc-button]:px-3 md:[&_.fc-button]:py-1.5 md:[&_.fc-button]:text-sm",
           "[&_.fc-button-primary:not(:disabled)]:border-[#2563eb] [&_.fc-button-primary:not(:disabled)]:bg-[#3b82f6] [&_.fc-button-primary:not(:disabled)]:text-white",
-          "[&_.fc-toolbar-title]:text-sm [&_.fc-toolbar-title]:font-semibold [&_.fc-toolbar-title]:text-[#0f172a] md:[&_.fc-toolbar-title]:text-lg",
+          // Titre toolbar
+          "[&_.fc-toolbar-title]:text-sm [&_.fc-toolbar-title]:font-bold [&_.fc-toolbar-title]:text-[#0f172a] md:[&_.fc-toolbar-title]:text-lg",
+          // Événements liste et grille
           "[&_.fc-list-event]:text-[11px] md:[&_.fc-list-event]:text-sm",
           "[&_.fc-daygrid-event]:text-[11px] md:[&_.fc-daygrid-event]:text-sm",
+          // Largeur totale, pas de scroll horizontal
           "[&_.fc-list-table]:w-full",
+          "[&_.fc-list]:w-full [&_.fc-list]:overflow-x-hidden",
           "[&_.fc-scrollgrid]:w-full [&_.fc-scrollgrid-section]:overflow-visible",
+          // Pas de bordure externe sur la vue liste
+          "[&_.fc-list]:border-none",
         ].join(" ")}
       >
         <FullCalendar
@@ -179,11 +186,11 @@ export default function Calendrier({
           initialView={isMobile ? "listMonth" : "dayGridMonth"}
           locale={frLocale}
           firstDay={1}
-          headerToolbar={{
-            left: "prev,next today",
-            center: "title",
-            right: "",
-          }}
+          headerToolbar={
+            isMobile
+              ? { left: "prev,next", center: "title", right: "" }
+              : { left: "prev,next today", center: "title", right: "" }
+          }
           buttonText={{
             today: "Aujourd'hui",
           }}

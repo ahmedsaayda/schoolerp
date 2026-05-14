@@ -115,7 +115,8 @@ export default function Sidebar({
 
       <nav
         className={[
-          "flex flex-1 flex-col space-y-6 py-4 transition-all duration-300 ease-in-out",
+          "flex min-h-0 flex-1 flex-col space-y-6 overflow-y-auto overflow-x-hidden py-4 transition-all duration-300 ease-in-out",
+          "overscroll-contain",
           collapsed ? "px-0 md:px-1" : "px-2",
         ].join(" ")}
         aria-label="Navigation principale"
@@ -299,14 +300,14 @@ export default function Sidebar({
               <X className="h-6 w-6" strokeWidth={2} aria-hidden />
             </button>
           </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">{sidebarBody}</div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{sidebarBody}</div>
         </aside>
       </div>
 
       {/* Desktop : rail latéral */}
       <aside
         className={[
-          "print:hidden hidden h-full min-h-0 shrink-0 flex-col overflow-y-auto border-r border-slate-800/80 bg-slate-950 text-white transition-all duration-300 ease-in-out md:flex",
+          "print:hidden hidden h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-slate-800/80 bg-slate-950 text-white transition-all duration-300 ease-in-out md:flex",
           isOpen ? "md:w-64" : "md:w-20",
         ].join(" ")}
       >

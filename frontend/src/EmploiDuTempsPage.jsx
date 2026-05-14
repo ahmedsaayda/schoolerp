@@ -155,7 +155,8 @@ export default function EmploiDuTempsPage() {
   const [baselineSessions, setBaselineSessions] = useState([]);
   const [baselineSignature, setBaselineSignature] = useState("");
 
-  const [metaLoading, setMetaLoading] = useState(true);
+  // Reste à true tant que csrfReady est false (loadMeta ne démarrera qu'ensuite).
+  const [metaLoading, setMetaLoading] = useState(!csrfReady);
   const [gridLoading, setGridLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -680,6 +681,15 @@ export default function EmploiDuTempsPage() {
     } finally {
       setCopyLoading(false);
     }
+  }
+
+  if (!csrfReady) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#3b82f6] border-t-transparent" aria-hidden />
+        <p className="text-sm font-medium text-[#64748b]">Initialisation de la session…</p>
+      </div>
+    );
   }
 
   return (
