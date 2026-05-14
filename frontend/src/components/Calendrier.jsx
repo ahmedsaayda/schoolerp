@@ -36,6 +36,34 @@ function jsDateToJourSemaine(d) {
   return js === 0 ? 6 : js - 1;
 }
 
+/**
+ * Palette hex synchronisée avec MATIERE_SCHEMES de emploiDuTempsGrid.js.
+ * Utilisée pour colorier les dots et blocs FullCalendar (qui attend des CSS colors, pas des classes Tailwind).
+ */
+const MATIERE_HEX = [
+  "#7c3aed", // violet-600
+  "#059669", // emerald-600
+  "#d97706", // amber-600
+  "#e11d48", // rose-600
+  "#0891b2", // cyan-600
+  "#a21caf", // fuchsia-600
+  "#4338ca", // indigo-600
+  "#65a30d", // lime-600
+];
+const MATIERE_HEX_FALLBACK = "#0284c7"; // sky-600
+
+function simpleHashLocal(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function matiereHexColor(label) {
+  const t = (label && String(label).trim()) || "";
+  if (!t) return MATIERE_HEX_FALLBACK;
+  return MATIERE_HEX[simpleHashLocal(t) % MATIERE_HEX.length];
+}
+
 function expandSessionsToFcEvents(sessionsWithMeta, rangeStart, rangeEnd, professeurs) {
   const events = [];
   const start = new Date(rangeStart);
@@ -58,11 +86,14 @@ function expandSessionsToFcEvents(sessionsWithMeta, rangeStart, rangeEnd, profes
         const [h2, m2] = hf.split(":").map(Number);
         de.setHours(h2, m2 || 0, 0, 0);
         const title = matiereLabelForSession(item.session, professeurs) || "Séance";
+        const color = matiereHexColor(title);
         events.push({
           id: item.cellKey,
           title,
           start: ds,
           end: de,
+          backgroundColor: color,
+          borderColor: color,
           extendedProps: item,
         });
       }
@@ -267,19 +298,129 @@ export default function Calendrier({
       ) : null}
 
       <style>{`
+/* ── Mobile : vue liste (< 768 px) ─────────────────────── */
 @media (max-width: 767px) {
   .cal-host .fc {
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
   }
+
+  /* Toolbar compact */
   .cal-host .fc .fc-toolbar {
-    flex-direction: column;
-    gap: 5px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+  }
+  .cal-host .fc .fc-toolbar-chunk {
+    justify-content: center !important;
   }
   .cal-host .fc .fc-toolbar-title {
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
+    text-align: center !important;
   }
+
+  /* Vue harness : hauteur auto, jamais fixée */
   .cal-host .fc .fc-view-harness {
-    height: 400px !important;
+    height: auto !important;
+    min-height: 180px !important;
+  }
+
+  /* Conteneur liste : pleine largeur, pas de scroll horizontal */
+  .cal-host .fc-list {
+    width: 100% !important;
+    border: none !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Table liste : layout fixe pour que les colonnes respectent les largeurs */
+  .cal-host .fc-list-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  /* Colonne graphique (dot) : largeur fixe réduite */
+  .cal-host .fc-list-event-graphic {
+    width: 28px !important;
+    padding-left: 8px !important;
+    padding-right: 4px !important;
+    vertical-align: middle !important;
+  }
+
+  /* Colonne heure : largeur fixe */
+  .cal-host .fc-list-event-time {
+    width: 72px !important;
+    font-size: 0.7rem !important;
+    font-family: ui-monospace, SFMono-Regular, monospace !important;
+    color: #64748b !important;
+    white-space: nowrap !important;
+    padding: 9px 6px 9px 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Colonne titre : prend le reste, tronqué si trop long */
+  .cal-host .fc-list-event-title {
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    padding: 9px 8px 9px 0 !important;
+    vertical-align: middle !important;
+    /* width: auto — prend le reste dans table-layout:fixed */
+  }
+
+  /* Ligne événement */
+  .cal-host .fc-list-event td {
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    background: transparent !important;
+  }
+  .cal-host .fc-list-event:hover td {
+    background: #f8fafc !important;
+  }
+
+  /* Dot de couleur : grand et bien visible */
+  .cal-host .fc-list-event-dot {
+    display: inline-block !important;
+    width: 10px !important;
+    height: 10px !important;
+    min-width: 10px !important;
+    border-radius: 50% !important;
+    border-width: 5px !important;
+    vertical-align: middle !important;
+  }
+
+  /* En-tête de jour */
+  .cal-host .fc-list-day th {
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+  }
+  .cal-host .fc-list-day-cushion {
+    background: #f1f5f9 !important;
+    padding: 5px 10px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-top: 1px solid #e2e8f0 !important;
+  }
+  .cal-host .fc-list-day-text,
+  .cal-host .fc-list-day-side-text {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  /* Message "aucun événement" */
+  .cal-host .fc-list-empty {
+    border: none !important;
+    background: transparent !important;
+  }
+  .cal-host .fc-list-empty-cushion {
+    font-size: 0.82rem !important;
+    color: #94a3b8 !important;
   }
 }
       `}</style>
