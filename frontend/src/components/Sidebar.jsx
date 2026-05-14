@@ -270,7 +270,7 @@ export default function Sidebar({
       {/* Mobile : tiroir uniquement si isOpen — entièrement retiré du flux quand fermé */}
       <div
         className={[
-          "print:hidden md:hidden fixed inset-0 z-50",
+          "print:hidden md:hidden fixed inset-0 z-[9999]",
           isOpen ? "" : "hidden",
         ].join(" ")}
         aria-hidden={!isOpen}
