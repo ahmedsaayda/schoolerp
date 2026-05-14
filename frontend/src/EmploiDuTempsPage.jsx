@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import { useNavigate } from "react-router-dom";
-import { Copy, MapPin, Printer, Trash2, User } from "lucide-react";
+import { Copy, Printer } from "lucide-react";
 
 import { useAuth } from "./AuthContext.jsx";
 import { defaultHomePath, isAdminUser } from "./authRoles.js";
 import AddSeanceModal from "./components/AddSeanceModal.jsx";
+import Calendrier from "./components/Calendrier.jsx";
 import TimetablePrintView from "./components/TimetablePrintView.jsx";
 import Loading from "./components/ui/Loading.jsx";
 import {
@@ -17,8 +18,6 @@ import {
 } from "./config.js";
 import { normalizeProfesseursListFromApi } from "./utils/professeurApi.js";
 import {
-  GRID_JOUR_LABELS,
-  GRID_JOUR_PRINT_INDICES,
   GRID_ROWS,
   totalWeeklyHoursFromFlatSessions,
   anchorGridRowForSession,
@@ -27,15 +26,12 @@ import {
   cellKey,
   collapseSessionsToTemplate,
   computeDisplayRowSpan,
-  matiereColorScheme,
-  matiereLabelForSession,
   profDisplayNameFromList,
   sessionPayloadForSignature,
   slotToApiTime,
   timeIntervalsOverlap,
   timeToMinutes,
   timeToSlot,
-  GRID_ONE_HOUR_MIN_HEIGHT_REM,
 } from "./utils/emploiDuTempsGrid.js";
 
 /** Année scolaire affichée (rentrée septembre) — cohérent avec le backend. */
@@ -106,10 +102,6 @@ function gridToCreneauxPayload(flatSessions) {
 
 function formatDayMonthLong(d) {
   return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" }).format(d);
-}
-
-function formatHeaderDate(d) {
-  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(d);
 }
 
 function flattenGridData(gridData) {
@@ -193,11 +185,6 @@ export default function EmploiDuTempsPage() {
     [monday, saturday],
   );
 
-  const columnDates = useMemo(
-    () => GRID_JOUR_PRINT_INDICES.map((j) => addDaysLocal(monday, j)),
-    [monday],
-  );
-
   const totalHeuresSemaine = useMemo(
     () => totalWeeklyHoursFromFlatSessions(flattenGridData(gridData)),
     [gridData],
@@ -211,6 +198,22 @@ export default function EmploiDuTempsPage() {
   const sessionCount = useMemo(() => flattenGridData(gridData).length, [gridData]);
 
   const coveredCellKeys = useMemo(() => buildCoveredCellKeysSet(gridData), [gridData]);
+
+  const sessionsWithMeta = useMemo(() => {
+    const out = [];
+    for (const [k, s] of Object.entries(gridData)) {
+      if (!s) continue;
+      const jour = Number(s.jour_semaine);
+      const hd = timeToSlot(s.heure_debut);
+      const hf = timeToSlot(s.heure_fin);
+      const row = anchorGridRowForSession(hd, hf);
+      if (!row) continue;
+      out.push({ session: s, jour, row, cellKey: k });
+    }
+    return out;
+  }, [gridData]);
+
+  const calendarRefreshKey = useMemo(() => creneauxSignatureFromGrid(gridData), [gridData]);
 
   const hasDimancheCreneau = useMemo(() => {
     for (const s of Object.values(gridData)) {
@@ -410,10 +413,6 @@ export default function EmploiDuTempsPage() {
     return profDisplayNameFromList(profId, professeurs);
   }
 
-  function matiereForCell(s) {
-    return matiereLabelForSession(s, professeurs);
-  }
-
   function ensureEditMode() {
     if (!isEditing) setIsEditing(true);
   }
@@ -577,12 +576,6 @@ export default function EmploiDuTempsPage() {
     closeModal();
   }
 
-  function removeSessionAtKey(k, e) {
-    e.stopPropagation();
-    if (!isEditing) return;
-    setGridData((prev) => ({ ...prev, [k]: null }));
-  }
-
   function cancelEditMode() {
     if (hasUnsavedChanges) {
       if (!window.confirm("Annuler les modifications non enregistrées ?")) return;
@@ -687,66 +680,6 @@ export default function EmploiDuTempsPage() {
     } finally {
       setCopyLoading(false);
     }
-  }
-
-  function SessionCard({ cellSession, jour, row, cellK }) {
-    const mat = matiereForCell(cellSession);
-    const scheme = matiereColorScheme(mat);
-    const profName = cellSession.professeur_name ?? profDisplayName(cellSession.professeur);
-    const salle = (cellSession.salle && String(cellSession.salle).trim()) || "";
-    const rowSpan = Math.max(1, Number(cellSession._rowSpan) || 1);
-    const hRem = rowSpan * GRID_ONE_HOUR_MIN_HEIGHT_REM;
-    const hd = timeToSlot(cellSession.heure_debut);
-    const hf = timeToSlot(cellSession.heure_fin);
-
-    return (
-      <div
-        role={isEditing ? "button" : undefined}
-        tabIndex={isEditing ? 0 : undefined}
-        onClick={() => (isEditing ? openEdit(cellSession, jour, row) : undefined)}
-        onKeyDown={(e) => {
-          if (isEditing && (e.key === "Enter" || e.key === " ")) {
-            e.preventDefault();
-            openEdit(cellSession, jour, row);
-          }
-        }}
-        style={rowSpan > 1 ? { minHeight: `${hRem}rem` } : undefined}
-        className={[
-          "relative flex min-h-[5.25rem] w-full min-w-0 flex-col rounded-xl border bg-gradient-to-br px-2.5 py-2 text-left shadow-sm transition",
-          scheme.border,
-          scheme.bg,
-          isEditing ? "cursor-pointer hover:brightness-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-400/80" : "",
-        ].join(" ")}
-      >
-        {isEditing ? (
-          <button
-            type="button"
-            className="absolute right-1 top-1 rounded-md p-1 text-slate-500 hover:bg-white/80 hover:text-red-600"
-            aria-label="Retirer ce créneau"
-            onClick={(e) => removeSessionAtKey(cellK, e)}
-          >
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
-          </button>
-        ) : null}
-        <p className={`pr-6 text-sm font-bold leading-tight ${scheme.text}`}>{mat || "Matière"}</p>
-        <p className={`mt-0.5 font-mono text-[10px] font-semibold tabular-nums text-slate-600 ${scheme.sub}`}>
-          {hd} – {hf}
-          {rowSpan > 1 ? <span className="ml-1 text-slate-500">({rowSpan} h)</span> : null}
-        </p>
-        <p className={`mt-1 flex items-center gap-1.5 text-xs font-medium ${scheme.sub}`}>
-          <User className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
-          <span className="min-w-0 break-words">{profName}</span>
-        </p>
-        {salle ? (
-          <span
-            className={`mt-1.5 inline-flex w-fit max-w-full items-center gap-1 rounded-md border border-black/5 bg-white/70 px-2 py-0.5 text-[10px] font-semibold ${scheme.text}`}
-          >
-            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-            {salle}
-          </span>
-        ) : null}
-      </div>
-    );
   }
 
   return (
@@ -910,7 +843,7 @@ export default function EmploiDuTempsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e2e8f0] bg-[#f8fafc] px-4 py-3">
               <div>
                 <h2 className="text-base font-semibold text-[#0f172a]">
-                  Grille — <span className="text-[#3b82f6]">{appliedClasseNom || `Classe #${appliedClasseId}`}</span>
+                  Calendrier — <span className="text-[#3b82f6]">{appliedClasseNom || `Classe #${appliedClasseId}`}</span>
                 </h2>
                 <p className="text-xs text-[#64748b]">
                   {anneeScolaireLabel}
@@ -918,9 +851,13 @@ export default function EmploiDuTempsPage() {
                   {weekRangeLabel}
                 </p>
                 {isEditing ? (
-                  <p className="mt-1 text-xs font-medium text-amber-800">Édition : cases cliquables, icône poubelle sur chaque séance</p>
+                  <p className="mt-1 text-xs font-medium text-amber-800">
+                    Édition : touchez une séance pour la modifier · touchez un jour du mois pour ajouter un créneau à partir de 08:00
+                  </p>
                 ) : (
-                  <p className="mt-1 text-xs text-[#94a3b8]">Cliquez « Modifier la grille » pour édition ou cliquez une case vide pour ajouter (passe en édition)</p>
+                  <p className="mt-1 text-xs text-[#94a3b8]">
+                    Vue mois sur grand écran, liste sur téléphone. Touchez une séance pour les détails.
+                  </p>
                 )}
               </div>
               {gridLoading ? (
@@ -932,96 +869,27 @@ export default function EmploiDuTempsPage() {
               )}
             </div>
 
-            <div className="overflow-x-auto p-1">
-              <table className="min-w-[720px] w-full border-collapse border border-[#e2e8f0] text-sm text-[#0f172a]">
-                <thead>
-                  <tr>
-                    <th
-                      className="sticky top-0 z-20 w-[100px] border-b border-r border-[#334155] bg-[#1e293b] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-white"
-                      scope="col"
-                    >
-                      Heure
-                    </th>
-                    {GRID_JOUR_PRINT_INDICES.map((j) => (
-                      <th
-                        key={j}
-                        className="sticky top-0 z-20 min-w-[108px] border-b border-l border-[#334155] bg-[#1e293b] px-1 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-white"
-                        scope="col"
-                      >
-                        <span className="block">{GRID_JOUR_LABELS[j]}</span>
-                        <span className="mt-0.5 block text-[10px] font-normal normal-case tracking-normal text-slate-300">
-                          {formatHeaderDate(columnDates[j])}
-                        </span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {GRID_ROWS.map((row, rowIdx) => (
-                    <tr
-                      key={`${row.start}-${row.end}`}
-                      className={rowIdx % 2 === 0 ? "bg-white" : "bg-[#fafbfc]"}
-                    >
-                      <th
-                        className="sticky left-0 z-10 w-[100px] border-b border-r border-[#e2e8f0] bg-clip-padding px-2 py-2 text-left text-xs font-semibold text-[#475569]"
-                        scope="row"
-                      >
-                        {row.start} – {row.end}
-                      </th>
-                      {GRID_JOUR_PRINT_INDICES.map((jour) => {
-                        const k = cellKey(jour, row);
-                        if (coveredCellKeys.has(k)) {
-                          return null;
-                        }
-                        const cellSession = gridData[k];
-                        const occupied = Boolean(cellSession);
-                        const rowSpan = occupied ? Number(cellSession._rowSpan) || 1 : 1;
-                        return (
-                          <td
-                            key={k}
-                            rowSpan={rowSpan > 1 ? rowSpan : undefined}
-                            className="border-b border-l border-[#e2e8f0] p-1 align-top"
-                          >
-                            {occupied ? (
-                              <SessionCard cellSession={cellSession} jour={jour} row={row} cellK={k} />
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => openCreateFromCell(jour, row)}
-                                disabled={gridLoading}
-                                className="group flex min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200/90 bg-slate-50/50 px-2 py-2 text-slate-400 transition hover:border-sky-400 hover:bg-sky-50/70 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-300 disabled:opacity-50"
-                              >
-                                <span className="text-xl font-light leading-none text-slate-300 group-hover:text-sky-500">
-                                  +
-                                </span>
-                                <span className="mt-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500 group-hover:text-sky-700">
-                                  Ajouter
-                                </span>
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-[#f1f5f9]">
-                    <th
-                      className="border border-[#e2e8f0] px-3 py-2.5 text-right text-xs font-bold text-[#0f172a] sm:text-sm"
-                      colSpan={1 + GRID_JOUR_PRINT_INDICES.length}
-                      scope="row"
-                    >
-                      Total des heures par semaine :{" "}
-                      {totalHeuresSemaine.toLocaleString("fr-FR", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      h
-                    </th>
-                  </tr>
-                </tfoot>
-              </table>
+            <div className="w-full min-w-0 max-w-full px-1 md:px-2">
+              <Calendrier
+                sessionsWithMeta={sessionsWithMeta}
+                refreshKey={calendarRefreshKey}
+                loading={gridLoading}
+                isEditing={isEditing}
+                professeurs={professeurs}
+                onEditSession={openEdit}
+                onCreateFromDay={(jour) => openCreateFromCell(jour, GRID_ROWS[0])}
+              />
+            </div>
+
+            <div className="border-t border-[#e2e8f0] bg-[#f1f5f9] px-3 py-3">
+              <p className="text-center text-xs font-bold text-[#0f172a] sm:text-sm">
+                Total des heures par semaine :{" "}
+                {totalHeuresSemaine.toLocaleString("fr-FR", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                h
+              </p>
             </div>
 
             {isEditing && appliedClasseId ? (
