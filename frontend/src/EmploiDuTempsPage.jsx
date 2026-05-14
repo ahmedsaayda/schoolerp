@@ -144,7 +144,7 @@ const emptyForm = () => ({
 
 export default function EmploiDuTempsPage() {
   const navigate = useNavigate();
-  const { user: authUser } = useAuth();
+  const { user: authUser, csrfReady } = useAuth();
   const [classes, setClasses] = useState([]);
   const [professeurs, setProfesseurs] = useState([]);
 
@@ -267,13 +267,13 @@ export default function EmploiDuTempsPage() {
       }
     }
 
-    if (authUser && isAdminUser(authUser)) {
+    if (authUser && isAdminUser(authUser) && csrfReady) {
       loadMeta();
     }
     return () => {
       cancelled = true;
     };
-  }, [authUser, navigate]);
+  }, [authUser, csrfReady, navigate]);
 
   const loadSchedule = useCallback(async (classeId) => {
     if (!classeId) {

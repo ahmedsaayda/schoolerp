@@ -12,10 +12,17 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readStoredUserRaw());
+  const [csrfReady, setCsrfReady] = useState(false);
 
-  /** Jeton CSRF avant toute mutation (sessions cross-origin Vercel ↔ Render). */
+  /**
+   * Récupère le jeton CSRF au montage (indispensable en mode Incognito / InPrivate
+   * où aucun cookie ne persiste entre les sessions). Toutes les requêtes API ne
+   * doivent démarrer qu'après la résolution de cet appel.
+   */
   useEffect(() => {
-    void apiFetch(API_AUTH_CSRF, { method: "GET", credentials: "include" });
+    apiFetch(API_AUTH_CSRF, { method: "GET" })
+      .catch(() => {})
+      .finally(() => setCsrfReady(true));
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -38,8 +45,9 @@ export function AuthProvider({ children }) {
       user,
       setUser,
       refreshUser,
+      csrfReady,
     }),
-    [user, refreshUser],
+    [user, refreshUser, csrfReady],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
