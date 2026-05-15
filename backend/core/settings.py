@@ -66,6 +66,7 @@ AUTH_USER_MODEL = "authentification.User"
 # WhiteNoise uniquement en production (DEBUG=False).
 _whitenoise_mw = [] if DEBUG else ["whitenoise.middleware.WhiteNoiseMiddleware"]
 
+# CorsMiddleware en tête : doit s’exécuter avant toute réponse (y compris preflight OPTIONS).
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -167,6 +168,10 @@ REST_FRAMEWORK = {
 }
 
 # --- CORS / CSRF / cookies ---
+# Front production (Vercel) ; surcharge possible via variables d’environnement sur Render.
+_VERCEL_PRODUCTION_ORIGIN = "https://schoolerp-ten.vercel.app"
+_RENDER_PRODUCTION_ORIGIN = "https://samah-backend.onrender.com"
+
 if DEBUG:
     # django-cors-headers : avec CREDENTIALS=True, l’Origin du navigateur est renvoyé tel quel
     # (pas de « * »), ce qui est compatible session cookie + Vite sur un autre port.
@@ -185,8 +190,16 @@ if DEBUG:
 else:
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOW_CREDENTIALS = True
-    CORS_ALLOWED_ORIGINS = ["https://schoolerp-ten.vercel.app"]
-    CSRF_TRUSTED_ORIGINS = ["https://schoolerp-ten.vercel.app", "https://samah-backend.onrender.com"]
+    CORS_ALLOWED_ORIGINS = env.list(
+        "CORS_ALLOWED_ORIGINS",
+        default=[_VERCEL_PRODUCTION_ORIGIN],
+    )
+    # Origine du front (Vercel) + hôte API (Render) pour l’admin Django et les formulaires.
+    CSRF_TRUSTED_ORIGINS = env.list(
+        "CSRF_TRUSTED_ORIGINS",
+        default=[_VERCEL_PRODUCTION_ORIGIN, _RENDER_PRODUCTION_ORIGIN],
+    )
+    # Cross-site : le front (autre site) envoie les cookies de session vers l’API (SameSite=None + Secure).
     SESSION_COOKIE_SAMESITE = "None"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SAMESITE = "None"
@@ -211,6 +224,8 @@ EMAIL_USE_TLS = env.str("EMAIL_USE_TLS", default="True") == "True"
 DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="noreply@localhost")
 
 if not DEBUG:
+    # Derrière le proxy Render : nécessaire pour is_secure(), cookies Secure et vérifications CSRF.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_HSTS_SECONDS = 31_536_000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True

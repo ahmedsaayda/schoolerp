@@ -195,6 +195,7 @@ def password_reset_confirm_api(request):
     return JsonResponse({"detail": "Mot de passe mis à jour. Vous pouvez vous connecter."})
 
 
+@csrf_exempt
 @require_POST
 def password_change_api(request):
     """Changement à l'initiative de l'utilisateur connecté (compte actif)."""
