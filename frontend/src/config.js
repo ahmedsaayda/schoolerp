@@ -1,6 +1,9 @@
 /**
  * Origine du backend Django (sans slash final, sans suffixe /api — les routes utilisent `/api/...`).
  * Si VITE_API_URL contient erreur commune `…/api`, on le retire pour éviter `/api/api/...`.
+ *
+ * En mode développement (`vite`), si `VITE_API_URL` est absent ou vide, la cible par défaut est
+ * http://localhost:8000 (backend Django local avec `manage.py runserver`).
  */
 function normalizeApiOrigin(raw) {
   let s = String(raw ?? "").trim().replace(/\/+$/, "");
@@ -10,7 +13,12 @@ function normalizeApiOrigin(raw) {
   return s || "http://localhost:8000";
 }
 
-export const API_BASE = normalizeApiOrigin(import.meta.env.VITE_API_URL);
+const viteApiUrl = import.meta.env.VITE_API_URL;
+export const API_BASE = normalizeApiOrigin(
+  import.meta.env.DEV && (!viteApiUrl || String(viteApiUrl).trim() === "")
+    ? ""
+    : viteApiUrl,
+);
 
 export const API_AUTH_CSRF = `${API_BASE}/api/auth/csrf/`;
 export const API_AUTH_LOGIN = `${API_BASE}/api/auth/login/`;
@@ -20,6 +28,8 @@ export const API_AUTH_PASSWORD_RESET_REQUEST = `${API_BASE}/api/auth/password-re
 export const API_AUTH_PASSWORD_RESET_CONFIRM = `${API_BASE}/api/auth/password-reset/confirm/`;
 export const API_AUTH_PASSWORD_CHANGE = `${API_BASE}/api/auth/password/change/`;
 export const API_AUTH_PASSWORD_OPS_SEND_RESET = `${API_BASE}/api/auth/password-ops/send-reset/`;
+export const API_AUTH_PASSWORD_OPS_CREATE_ACCOUNT = `${API_BASE}/api/auth/password-ops/admin/create-account/`;
+export const API_AUTH_PASSWORD_OPS_FORCE_RESET = `${API_BASE}/api/auth/password-ops/admin/force-reset/`;
 export const API_ELEVES = `${API_BASE}/api/eleves/`;
 export const API_ELEVES_IMPAYES = `${API_BASE}/api/eleves/impayes/`;
 export const API_PAIEMENTS = `${API_BASE}/api/paiements/`;

@@ -23,4 +23,14 @@ urlpatterns = [
         views.password_ops_send_reset_api,
         name="auth-password-ops-send-reset",
     ),
+    path(
+        "password-ops/admin/create-account/",
+        views.AdminAccountCreateView.as_view(),
+        name="auth-password-ops-admin-create-account",
+    ),
+    path(
+        "password-ops/admin/force-reset/",
+        views.AdminPasswordResetForceView.as_view(),
+        name="auth-password-ops-admin-force-reset",
+    ),
 ]

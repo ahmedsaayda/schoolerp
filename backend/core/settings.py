@@ -1,33 +1,50 @@
 """
 Django settings for core project.
+
+Variables : fichier backend/.env (django-environ) + variables d'environnement Render en prod.
 """
 
-import os
 from pathlib import Path
 
 import dj_database_url
-import dotenv
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Loads variables from backend/.env into os.environ when the file exists.
-# In production, real environment variables always take precedence over the file.
-dotenv.load_dotenv(BASE_DIR / ".env")
+env = environ.Env()
 
-# Never hard-code the secret key; raise at startup if the variable is missing in production.
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-change-me-in-production")
+# Charge backend/.env si présent ; sur Render les secrets viennent du tableau « Environment ».
+environ.Env.read_env(BASE_DIR / ".env")
 
-# False by default — must be explicitly opt-in via the environment variable.
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-# Hosts acceptés : Render prod, local, wildcard pour éviter les blocages durant les tests.
-# Sécurité : réduisez liste / retirez "*" une fois les domaines définitifs fixés.
-ALLOWED_HOSTS: list[str] = [
-    "samah-backend.onrender.com",
-    "localhost",
-    "127.0.0.1",
-    "*",
-]
+def _env_truthy(name: str, alias: str | None = None) -> bool:
+    raw = env.str(name, default="").strip().lower()
+    if raw in ("true", "1", "yes", "on"):
+        return True
+    if alias:
+        raw_alias = env.str(alias, default="").strip().lower()
+        return raw_alias in ("true", "1", "yes", "on")
+    return False
+
+
+DEBUG = _env_truthy("DEBUG", "DJANGO_DEBUG")
+
+SECRET_KEY = env.str(
+    "SECRET_KEY",
+    default=env.str("DJANGO_SECRET_KEY", default="django-insecure-change-me-in-production"),
+)
+
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = env.list(
+        "ALLOWED_HOSTS",
+        default=[
+            "samah-backend.onrender.com",
+            "localhost",
+            "127.0.0.1",
+        ],
+    )
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -46,10 +63,13 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = "authentification.User"
 
+# WhiteNoise uniquement en production (DEBUG=False).
+_whitenoise_mw = [] if DEBUG else ["whitenoise.middleware.WhiteNoiseMiddleware"]
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    *_whitenoise_mw,
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -79,13 +99,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
-_sqlite_default_url = "sqlite:///" + (BASE_DIR / "db.sqlite3").as_posix()
-DATABASES = {
-    "default": dj_database_url.config(
-        default=_sqlite_default_url,
-        conn_max_age=600,
-    )
-}
+_sqlite_fallback = "sqlite:///" + (BASE_DIR / "db.sqlite3").as_posix()
+
+if DEBUG:
+    DATABASES = {
+        "default": dj_database_url.config(
+            env="DATABASE_URL",
+            default=_sqlite_fallback,
+            conn_max_age=0,
+        )
+    }
+    db_conf = DATABASES["default"]
+    engine = (db_conf.get("ENGINE") or "").lower()
+    if "postgresql" in engine:
+        opts = db_conf.setdefault("OPTIONS", {})
+        # PostgreSQL local : pas de TLS (évite les erreurs sslmode avec un serveur sans SSL)
+        opts.setdefault("sslmode", "disable")
+else:
+    DATABASES = {
+        "default": dj_database_url.config(
+            conn_max_age=600,
+        )
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -109,13 +144,16 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": (
+            "whitenoise.storage.CompressedStaticFilesStorage"
+            if not DEBUG
+            else "django.contrib.staticfiles.storage.StaticFilesStorage"
+        ),
     },
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Fichiers uploadés (justificatifs banque, etc.)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -124,52 +162,60 @@ REST_FRAMEWORK = {
         "authentification.session_auth.SessionAuthenticationWithoutCSRF",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        # IsAuthenticated: any ViewSet without explicit permission_classes is
-        # closed by default — prevents accidental open endpoints.
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
 
-# --- CORS / CSRF / cookies : frontend Vercel ↔ API Render ---
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOW_CREDENTIALS = True  # Obligatoire pour sessionid avec fetch credentials: "include"
-CORS_ALLOWED_ORIGINS = ["https://schoolerp-ten.vercel.app"]
+# --- CORS / CSRF / cookies ---
+if DEBUG:
+    # django-cors-headers : avec CREDENTIALS=True, l’Origin du navigateur est renvoyé tel quel
+    # (pas de « * »), ce qui est compatible session cookie + Vite sur un autre port.
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_SAMESITE = "Lax"
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOW_CREDENTIALS = True
+    CORS_ALLOWED_ORIGINS = ["https://schoolerp-ten.vercel.app"]
+    CSRF_TRUSTED_ORIGINS = ["https://schoolerp-ten.vercel.app", "https://samah-backend.onrender.com"]
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SECURE = True
 
-CSRF_TRUSTED_ORIGINS = ["https://schoolerp-ten.vercel.app", "https://samah-backend.onrender.com"]
-
-# Cookies session / CSRF : cross-site (Vercel → Render) avec HTTPS
-SESSION_COOKIE_HTTPONLY = True   # JS cannot read the session cookie
+SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 8 * 60 * 60  # 8 h
-SESSION_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
 
-# --- E-mail / réinitialisation mot de passe (SPA) ---
-# URL du front (Vite) pour les liens dans les e-mails ; en prod : https://votredomaine.tld
-FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "http://localhost:5173")
-# Durée de validité du jeton (secondes), défaut Django ~3 jours si non défini.
-PASSWORD_RESET_TIMEOUT = int(os.environ.get("PASSWORD_RESET_TIMEOUT", "259200"))
+FRONTEND_BASE_URL = env.str("FRONTEND_BASE_URL", default="http://localhost:5173")
+PASSWORD_RESET_TIMEOUT = int(env.str("PASSWORD_RESET_TIMEOUT", default="259200"))
 
 if DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@localhost")
+EMAIL_HOST = env.str("EMAIL_HOST", default="")
+EMAIL_PORT = int(env.str("EMAIL_PORT", default="587"))
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.str("EMAIL_USE_TLS", default="True") == "True"
+DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="noreply@localhost")
 
-# ── Production-only HTTP security headers ──────────────────────────────────
 if not DEBUG:
-    SECURE_HSTS_SECONDS             = 31_536_000  # 1 year — enable only after HTTPS is confirmed
-    SECURE_HSTS_INCLUDE_SUBDOMAINS  = True
-    SECURE_HSTS_PRELOAD             = True
-    SECURE_SSL_REDIRECT             = True
-    SECURE_REFERRER_POLICY          = "strict-origin-when-cross-origin"
-    SECURE_CONTENT_TYPE_NOSNIFF     = True
+    SECURE_HSTS_SECONDS = 31_536_000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 X_FRAME_OPTIONS = "DENY"

@@ -14,16 +14,27 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
-from rest_framework import viewsets
-from authentification.session_auth import SessionAuthenticationWithoutCSRF
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .session_auth import SessionAuthenticationWithoutCSRF
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .audit import create_audit_log
 from .audit_model_catalog import build_audit_model_catalog
 from .models import AuditLog
-from .permissions import CannotDeleteSelf, IsAdminRole, IsSuperAdminRole
+from .permissions import (
+    CannotDeleteSelf,
+    IsAdminRole,
+    IsPasswordOpsRoleOnly,
+    IsSuperAdminRole,
+)
 from .serializers import AuditLogSerializer, StaffUserSerializer, UserSerializer
 
 User = get_user_model()
@@ -276,6 +287,125 @@ def password_ops_send_reset_api(request):
         },
     )
     return JsonResponse({"detail": f"E-mail de réinitialisation envoyé à {target.email}."})
+
+
+class AdminAccountCreateView(APIView):
+    """
+    Crée un compte métier (identifiant, e-mail, mot de passe, rôle) hors parcours scolaire.
+    Réservé au rôle PASSWORD_OPS uniquement.
+    """
+
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
+    permission_classes = [IsAuthenticated, IsPasswordOpsRoleOnly]
+
+    def post(self, request):
+        username = (request.data.get("username") or "").strip()
+        email = (request.data.get("email") or "").strip()
+        password = request.data.get("password") or ""
+        role = (request.data.get("role") or "").strip()
+
+        if not username:
+            return Response({"detail": "Identifiant requis."}, status=status.HTTP_400_BAD_REQUEST)
+        if not email:
+            return Response({"detail": "Adresse e-mail requise."}, status=status.HTTP_400_BAD_REQUEST)
+        if not password or not str(password).strip():
+            return Response({"detail": "Mot de passe requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        allowed_roles = (
+            User.Role.ADMIN,
+            User.Role.POINTAGE_AGENT,
+            User.Role.COMPTABLE,
+        )
+        if role not in allowed_roles:
+            return Response(
+                {"detail": "Rôle non autorisé (choisir Directeur, Comptable ou Agent de pointage)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if User.objects.filter(username__iexact=username).exists():
+            return Response({"detail": "Cet identifiant est déjà utilisé."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User(username=username, email=email, role=role, is_staff=True, is_superuser=False)
+        try:
+            validate_password(password, user)
+        except ValidationError as exc:
+            msg = exc.messages[0] if exc.messages else "Mot de passe refusé."
+            return Response({"detail": str(msg)}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(password)
+        user.must_change_password = True
+        user.save()
+
+        create_audit_log(
+            utilisateur=request.user,
+            action=AuditLog.Action.CREATION,
+            modele_concerne="User",
+            details={
+                "via": "password_ops_admin_create",
+                "created_user_id": user.pk,
+                "created_username": user.username,
+                "created_role": user.role,
+            },
+        )
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class AdminPasswordResetForceView(APIView):
+    """
+    Définit immédiatement un nouveau mot de passe pour un compte métier (sans e-mail).
+    Réservé au rôle PASSWORD_OPS uniquement.
+    """
+
+    authentication_classes = [SessionAuthenticationWithoutCSRF]
+    permission_classes = [IsAuthenticated, IsPasswordOpsRoleOnly]
+
+    def post(self, request):
+        username = (request.data.get("username") or "").strip()
+        email = (request.data.get("email") or "").strip()
+        new_password = request.data.get("new_password") or ""
+
+        if not username and not email:
+            return Response(
+                {"detail": "Indiquez un identifiant ou une adresse e-mail."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not new_password or not str(new_password).strip():
+            return Response({"detail": "Nouveau mot de passe requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = User.objects.filter(is_active=True).exclude(is_superuser=True)
+        target = None
+        if username:
+            target = qs.filter(username__iexact=username).first()
+        if target is None and email:
+            target = qs.filter(email__iexact=email).exclude(email="").first()
+
+        if target is None:
+            return Response({"detail": "Compte introuvable ou non éligible."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            validate_password(new_password, target)
+        except ValidationError as exc:
+            msg = exc.messages[0] if exc.messages else "Mot de passe refusé."
+            return Response({"detail": str(msg)}, status=status.HTTP_400_BAD_REQUEST)
+
+        target.set_password(new_password)
+        target.must_change_password = False
+        target.save()
+
+        create_audit_log(
+            utilisateur=request.user,
+            action=AuditLog.Action.RESET_PASSWORD_COMPLETED,
+            modele_concerne="User",
+            details={
+                "target_user_id": target.pk,
+                "target_username": target.username,
+                "via": "password_ops_force_reset",
+            },
+        )
+        return Response(
+            {"detail": f"Mot de passe mis à jour pour « {target.username} »."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class UserManagementViewSet(viewsets.ModelViewSet):

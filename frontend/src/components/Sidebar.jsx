@@ -126,7 +126,7 @@ export default function Sidebar({
             <NavItem
               to="/outils-mot-de-passe"
               icon={KeyRound}
-              label="Réinitialisation e-mail"
+              label="Outils mots de passe"
               collapsed={collapsed}
               onNavigate={onNavigate}
             />

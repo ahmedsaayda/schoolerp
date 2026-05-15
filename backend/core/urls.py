@@ -5,12 +5,15 @@ URL configuration for core project.
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include, path
 
 from authentification import views as auth_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Healthcheck pour le cron-job (garde le service éveillé sur Render)
+    path("api/ping/", lambda r: JsonResponse({"status": "online"})),
     # Compat : anciennes URLs / erreur VITE_API_URL avec suffixe …/api (+ sans segment /auth/)
     path("api/login/", auth_views.login_api),
     path("api/check-auth/", auth_views.me_api),

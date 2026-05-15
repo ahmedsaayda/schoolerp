@@ -126,6 +126,21 @@ class IsAdminOrComptable(BasePermission):
         return r in (User.Role.ADMIN, User.Role.COMPTABLE)
 
 
+class IsPasswordOpsRoleOnly(BasePermission):
+    """
+    Création de comptes et réinitialisation forcée : uniquement le rôle PASSWORD_OPS
+    (pas de dérogation superuser — réservé aux comptes techniques dédiés).
+    """
+
+    message = "Accès réservé au rôle opérations mot de passe."
+
+    def has_permission(self, request, view) -> bool:
+        u = request.user
+        if not u or not getattr(u, "is_authenticated", False):
+            return False
+        return getattr(u, "role", None) == User.Role.PASSWORD_OPS
+
+
 class CannotDeleteSelf(BasePermission):
     """Empêche un ADMIN de supprimer son propre compte.
 
