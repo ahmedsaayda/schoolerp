@@ -1,4 +1,4 @@
-# 🎓 SAMAH SCHOOL - ERP Scolaire
+# 🎓 SAMA SCHOOL - ERP Scolaire
 
 Système de gestion scolaire et administrative complet (ERP) conçu pour gérer la scolarité, les finances, les ressources humaines et l'administration quotidienne des établissements scolaires.
 
